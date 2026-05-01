@@ -8,6 +8,7 @@ import { auth } from "@/firebase/client";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { setPersistence, browserLocalPersistence } from "firebase/auth";
 
 import {
   createUserWithEmailAndPassword,
@@ -67,30 +68,43 @@ const AuthForm = ({ type }: { type: FormType }) => {
         toast.success("Account created successfully. Please sign in.");
         router.push("/sign-in");
       } else {
-        const { email, password } = data;
+          const { email, password } = data;
 
-        const userCredential = await signInWithEmailAndPassword(
-          auth,
-          email,
-          password
-        );
+          // Make sure the session is persistent
+          await setPersistence(auth, browserLocalPersistence);
 
-        const idToken = await userCredential.user.getIdToken();
-        if (!idToken) {
-          toast.error("Sign in Failed. Please try again.");
-          return;
+          const userCredential = await signInWithEmailAndPassword(
+            auth,
+            email,
+            password
+          );
+          console.log("Firebase sign-in was successful.");
+
+          const idToken = await userCredential.user.getIdToken();
+          if (!idToken) {
+            toast.error("Sign in Failed. Please try again.");
+            return;
+          }
+          console.log("Calling server signIn action...");
+
+          const result = await signIn({
+            email,
+            idToken,
+          });
+          console.log("Server action returned:", result);
+
+          // Check the result before proceeding
+          if (!result || !result.success) {
+            toast.error(result?.message || "Sign in Failed. Please try again.");
+            return;
+          }
+
+          toast.success("Signed in successfully.");
+          console.log("Redirecting to /...");
+          window.location.href = "/";
         }
-
-        await signIn({
-          email,
-          idToken,
-        });
-
-        toast.success("Signed in successfully.");
-        router.push("/");
-      }
     } catch (error) {
-      console.log(error);
+      console.log("An error was caught:",error);
       toast.error(`There was an error: ${error}`);
     }
   };

@@ -13,9 +13,20 @@ import {
 async function Home() {
   const user = await getCurrentUser();
 
+  if (!user) {
+    return (
+      <section className="flex flex-col items-center justify-center h-[60vh] gap-4">
+        <h2 className="text-2xl font-semibold">Please sign in</h2>
+        <Button asChild>
+          <Link href="/sign-in">Go to Sign In</Link>
+        </Button>
+      </section>
+    );
+  }
+
   const [userInterviews, allInterview] = await Promise.all([
-    getInterviewsByUserId(user?.id!),
-    getLatestInterviews({ userId: user?.id! }),
+    getInterviewsByUserId(user.id),
+    getLatestInterviews({ userId: user.id }),
   ]);
 
   const hasPastInterviews = userInterviews?.length! > 0;
@@ -23,6 +34,7 @@ async function Home() {
 
   return (
     <>
+      {/* --- CTA Section --- */}
       <section className="card-cta">
         <div className="flex flex-col gap-6 max-w-lg">
           <h2>Get Interview-Ready with AI-Powered Practice & Feedback</h2>
@@ -44,15 +56,15 @@ async function Home() {
         />
       </section>
 
+      {/* --- Your Interviews --- */}
       <section className="flex flex-col gap-6 mt-8">
         <h2>Your Interviews</h2>
-
         <div className="interviews-section">
           {hasPastInterviews ? (
             userInterviews?.map((interview) => (
               <InterviewCard
                 key={interview.id}
-                userId={user?.id}
+                userId={user.id}
                 interviewId={interview.id}
                 role={interview.role}
                 type={interview.type}
@@ -66,15 +78,15 @@ async function Home() {
         </div>
       </section>
 
+      {/* --- Take Interviews --- */}
       <section className="flex flex-col gap-6 mt-8">
         <h2>Take Interviews</h2>
-
         <div className="interviews-section">
           {hasUpcomingInterviews ? (
             allInterview?.map((interview) => (
               <InterviewCard
                 key={interview.id}
-                userId={user?.id}
+                userId={user.id}
                 interviewId={interview.id}
                 role={interview.role}
                 type={interview.type}

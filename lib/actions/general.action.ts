@@ -95,11 +95,17 @@ export async function getLatestInterviews(
 ): Promise<Interview[] | null> {
   const { userId, limit = 20 } = params;
 
+  if (!userId) {
+    console.warn("⚠️ getLatestInterviews called without a userId");
+    return [];
+  }
+
   const interviews = await db
     .collection("interviews")
-    .orderBy("createdAt", "desc")
     .where("finalized", "==", true)
     .where("userId", "!=", userId)
+    .orderBy("userId") // ✅ Firestore requires this with != queries
+    .orderBy("createdAt", "desc")
     .limit(limit)
     .get();
 
@@ -109,9 +115,15 @@ export async function getLatestInterviews(
   })) as Interview[];
 }
 
+
 export async function getInterviewsByUserId(
-  userId: string
+  userId?: string
 ): Promise<Interview[] | null> {
+  if (!userId) {
+    console.warn("⚠️ getInterviewsByUserId called without a userId");
+    return [];
+  }
+
   const interviews = await db
     .collection("interviews")
     .where("userId", "==", userId)

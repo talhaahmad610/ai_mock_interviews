@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   const { type, role, level, techstack, amount, userid } = await request.json();
 
   try {
-    const { text: questions } = await generateText({
+    const result = await generateText({
       model: google("gemini-2.0-flash-001"),
       prompt: `Prepare questions for a job interview.
         The job role is ${role}.
@@ -20,17 +20,24 @@ export async function POST(request: Request) {
         The questions are going to be read by a voice assistant so do not use "/" or "*" or any other special characters which might break the voice assistant.
         Return the questions formatted like this:
         ["Question 1", "Question 2", "Question 3"]
-        
-        Thank you! <3
     `,
     });
 
+    // result.text will be the string output from Gemini
+    let parsedQuestions: string[];
+    try {
+      parsedQuestions = JSON.parse(result.text);
+    } catch (e) {
+      console.error("Failed to parse AI output:", result.text);
+      throw new Error("AI output was not valid JSON");
+    }
+
     const interview = {
-      role: role,
-      type: type,
-      level: level,
+      role,
+      type,
+      level,
       techstack: techstack.split(","),
-      questions: JSON.parse(questions),
+      questions: parsedQuestions,
       userId: userid,
       finalized: true,
       coverImage: getRandomInterviewCover(),
@@ -42,7 +49,7 @@ export async function POST(request: Request) {
     return Response.json({ success: true }, { status: 200 });
   } catch (error) {
     console.error("Error:", error);
-    return Response.json({ success: false, error: error }, { status: 500 });
+    return Response.json({ success: false, error: String(error) }, { status: 500 });
   }
 }
 
